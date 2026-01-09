@@ -7,41 +7,63 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
-function StatCard({
+export function StatCard({
   label,
   value,
-  hint
+  hint,
+  icon
 }: {
   label: string;
   value: number;
   hint: string;
+  icon: React.ReactNode;
 }) {
   return (
-    <Card className="p-5">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-1 text-3xl font-semibold">{value}</div>
-      <div className="mt-2 text-sm text-muted-foreground">{hint}</div>
+    <Card className="relative p-4">
+      <div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className="mt-1 text-2xl font-semibold">{value}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
+      </div>
+
+      <div className="absolute bottom-4 right-4 rounded-full bg-muted p-2">
+        {icon}
+      </div>
     </Card>
   );
 }
 
 export default function DashboardPage() {
-  const tasksQ = useQuery({ queryKey: ["tasks"], queryFn: api.tasks });
+  const tasksQ = useQuery({
+    queryKey: ["tasks"],
+    queryFn: api.tasks
+  });
 
   const tasks = tasksQ.data ?? [];
   const total = tasks.length;
-  const completed = tasks.filter((t) => t.status === "Done").length;
-  const inProgress = tasks.filter((t) => t.status === "In Progress").length;
-  const overdue = 0; // optional: you can compute from dueDate if you want
+
+  const completed = tasks.filter(
+    (t) => t.status === "done"
+  ).length;
+
+  const inProgress = tasks.filter(
+    (t) => t.status === "in-progress"
+  ).length;
+
+  const today = new Date();
+
+  const overdue = tasks.filter((t) => {
+    if (t.status === "done") return false;
+    if (!t.dueDate) return false;
+    return new Date(t.dueDate) < today;
+  }).length;
 
   return (
     <AppShell activePath="/">
       <div>
-        <div className="text-2xl font-semibold">Dashboard</div>
-        <div className="text-muted-foreground">Welcome back</div>
-
         {tasksQ.isLoading ? (
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -55,31 +77,84 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <>
-            <div className="mt-6 grid gap-4">
-              <StatCard label="Total Tasks" value={total} hint="from last week" />
-              <StatCard label="Completed" value={completed} hint="from last week" />
-              <StatCard label="In Progress" value={inProgress} hint="from last week" />
-              <StatCard label="Overdue" value={overdue} hint="from last week" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard
+                label="Total Tasks"
+                value={total}
+                hint="from last week"
+                icon={"📋"}
+              />
+              <StatCard
+                label="Completed"
+                value={completed}
+                hint="from last week"
+                icon={"✅"}
+              />
+              <StatCard
+                label="In Progress"
+                value={inProgress}
+                hint="from last week"
+                icon={"⏳"}
+              />
+              <StatCard
+                label="Overdue"
+                value={overdue}
+                hint="from last week"
+                icon={"🚩"}
+              />
             </div>
 
             <Card className="mt-6 p-5">
               <div className="flex items-center justify-between">
                 <div className="font-semibold">Recent Tasks</div>
-                <Link href="/tasks" className="text-sm text-muted-foreground hover:underline">
-                  View all
+                <Link
+                  href="/tasks"
+                  className="text-sm text-muted-foreground hover:underline"
+                >
+                  View all →
                 </Link>
               </div>
 
-              <div className="mt-4 space-y-3">
-                {tasks.slice(0, 4).map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/tasks/${t.id}`}
-                    className="block rounded-md border p-4 hover:bg-muted"
+              <div className="mt-4 space-y-2">
+                {tasks.slice(0, 4).map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between rounded-md border p-3 hover:bg-muted transition"
                   >
-                    <div className="font-medium">{t.title}</div>
-                    <div className="text-sm text-muted-foreground">{t.status}</div>
-                  </Link>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={task.status === "done"}
+                        readOnly
+                        className="h-4 w-4"
+                      />
+                      <div>
+                        <div
+                          className={`font-medium ${task.status === "done"
+                            ? "line-through text-muted-foreground"
+                            : ""
+                            }`}
+                        >
+                          {task.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Project #{task.projectId}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-xs capitalize
+          ${task.status === "done"
+                          ? "border-emerald-500 text-emerald-600"
+                          : task.status === "in-progress"
+                            ? "border-orange-500 text-orange-600"
+                            : "border-gray-400 text-gray-600"
+                        }`}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
                 ))}
               </div>
             </Card>

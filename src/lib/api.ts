@@ -17,7 +17,7 @@ export type Task = {
   id: number;
   title: string;
   description?: string;
-  status: "To Do" | "In Progress" | "Done";
+  status: "todo" | "in-progress" | "done";
   priority?: "Low" | "Medium" | "High";
   projectId: number;
   assignee?: string;
