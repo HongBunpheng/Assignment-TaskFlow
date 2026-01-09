@@ -122,12 +122,11 @@ export default function DashboardPage() {
                     className="flex items-center justify-between rounded-md border p-3 hover:bg-muted transition"
                   >
                     <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={task.status === "done"}
-                        readOnly
-                        className="h-4 w-4"
-                      />
+                      <div className="h-4 w-4 rounded border flex items-center justify-center">
+                        {task.status === "done" && (
+                          <div className="h-2 w-2 rounded bg-black" />
+                        )}
+                      </div>
                       <div>
                         <div
                           className={`font-medium ${task.status === "done"

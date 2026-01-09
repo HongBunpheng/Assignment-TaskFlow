@@ -1,115 +1,140 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
-const tabs = ["All", "To Do", "In Progress", "Done"] as const;
-type Tab = (typeof tabs)[number];
+type Filter = "all" | "todo" | "in-progress" | "done";
+
+function statusStyle(status: string) {
+    switch (status) {
+        case "done":
+            return "border-emerald-500 text-emerald-600 bg-emerald-50";
+        case "in-progress":
+            return "border-orange-500 text-orange-600 bg-orange-50";
+        case "todo":
+        default:
+            return "border-gray-400 text-gray-600 bg-gray-50";
+    }
+}
 
 export default function TasksPage() {
-    const [tab, setTab] = useState<Tab>("All");
-    const [q, setQ] = useState("");
+    const [filter, setFilter] = useState<Filter>("all");
 
-    const tasksQ = useQuery({ queryKey: ["tasks"], queryFn: api.tasks });
+    const tasksQ = useQuery({
+        queryKey: ["tasks"],
+        queryFn: api.tasks,
+    });
 
-    const filtered = useMemo(() => {
-        const list = tasksQ.data ?? [];
-        return list
-            .filter((t) => (tab === "All" ? true : t.status === tab))
-            .filter((t) => t.title.toLowerCase().includes(q.toLowerCase()));
-    }, [tasksQ.data, tab, q]);
+    const tasks = tasksQ.data ?? [];
+
+    const filteredTasks =
+        filter === "all"
+            ? tasks
+            : tasks.filter((t) => t.status === filter);
 
     return (
         <AppShell activePath="/tasks">
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className="text-2xl font-semibold">Tasks</div>
-                    <div className="text-muted-foreground">
-                        {tasksQ.data?.length ?? 0} total tasks
+            <div>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold">All Tasks</h1>
+                        <p className="text-sm text-muted-foreground">
+                            {tasks.length} total tasks
+                        </p>
                     </div>
+
                 </div>
 
-                <div className="w-65">
-                    <Input
-                        placeholder="Search tasks..."
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                    />
+                <div className="mt-4 flex gap-2">
+                    {[
+                        { label: "All", value: "all" },
+                        { label: "To Do", value: "todo" },
+                        { label: "In Progress", value: "in-progress" },
+                        { label: "Done", value: "done" },
+                    ].map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => setFilter(tab.value as Filter)}
+                            className={`rounded-md px-3 py-1.5 text-sm border
+                ${filter === tab.value
+                                    ? "bg-black text-white border-black"
+                                    : "text-muted-foreground hover:bg-muted"
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
-            </div>
 
-            <div className="mt-4 flex gap-2">
-                {tabs.map((t) => (
-                    <Button
-                        key={t}
-                        variant={tab === t ? "default" : "outline"}
-                        onClick={() => setTab(t)}
-                    >
-                        {t}
-                    </Button>
-                ))}
-            </div>
-
-            <Card className="mt-5 p-3">
-                {tasksQ.isLoading ? (
-                    <div className="space-y-3 p-2">
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                    </div>
-                ) : tasksQ.isError ? (
-                    <div className="p-4">
-                        <div className="font-medium">Failed to load tasks</div>
-                        <div className="text-sm text-muted-foreground">
-                            Run: <span className="font-mono">npm run server</span>
+                <Card className="mt-4 p-2">
+                    {tasksQ.isLoading ? (
+                        <div className="space-y-3 p-3">
+                            <Skeleton className="h-14 w-full" />
+                            <Skeleton className="h-14 w-full" />
+                            <Skeleton className="h-14 w-full" />
                         </div>
-                    </div>
-                ) : (
-                    <div className="divide-y">
-                        {filtered.map((task) => (
-                            <Link
-                                key={task.id}
-                                href={`/tasks/${task.id}`}
-                                className="block p-4 hover:bg-muted"
-                            >
-                                <div className="flex items-center justify-between gap-4">
-                                    <div>
-                                        <div className="font-medium">{task.title}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {task.description ?? "No description"}
+                    ) : tasksQ.isError ? (
+                        <div className="p-4 text-sm text-red-500">
+                            Failed to load tasks. Is JSON Server running?
+                        </div>
+                    ) : (
+                        <div className="divide-y">
+                            {filteredTasks.map((task) => (
+                                <div
+                                    key={task.id}
+                                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-4 w-4 rounded border flex items-center justify-center">
+                                            {task.status === "done" && (
+                                                <div className="h-2 w-2 rounded bg-black" />
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <div
+                                                className={`font-medium ${task.status === "done"
+                                                    ? "line-through text-muted-foreground"
+                                                    : ""
+                                                    }`}
+                                            >
+                                                {task.title}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {task.description}
+                                            </div>
                                         </div>
                                     </div>
-                                    <Badge
-                                        variant={
-                                            task.status === "Done"
-                                                ? "secondary"
-                                                : task.status === "In Progress"
-                                                    ? "default"
-                                                    : "outline"
-                                        }
-                                    >
-                                        {task.status}
-                                    </Badge>
-                                </div>
-                            </Link>
-                        ))}
+                                    <div className="flex items-center gap-4">
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${statusStyle(task.status)}`}
+                                        >
+                                            {task.status}
+                                        </Badge>
 
-                        {filtered.length === 0 && (
-                            <div className="p-6 text-center text-sm text-muted-foreground">
-                                No tasks found.
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Card>
+                                        <div className="text-xs text-muted-foreground">
+                                            {task.dueDate
+                                                ? new Date(task.dueDate).toLocaleDateString()
+                                                : "No date"}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {filteredTasks.length === 0 && (
+                                <div className="p-6 text-center text-sm text-muted-foreground">
+                                    No tasks found
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Card>
+            </div>
         </AppShell>
     );
 }
