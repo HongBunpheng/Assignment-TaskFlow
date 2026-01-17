@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 type Filter = "all" | "todo" | "in-progress" | "done";
 
@@ -85,7 +86,8 @@ export default function TasksPage() {
                     ) : (
                         <div className="divide-y">
                             {filteredTasks.map((task) => (
-                                <div
+                                <Link
+                                    href={`/tasks/${task.id}`}
                                     key={task.id}
                                     className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition"
                                 >
@@ -124,7 +126,7 @@ export default function TasksPage() {
                                                 : "No date"}
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                             {filteredTasks.length === 0 && (
                                 <div className="p-6 text-center text-sm text-muted-foreground">

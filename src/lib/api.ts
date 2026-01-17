@@ -13,18 +13,27 @@ export type Project = {
   dueDate?: string | null;
 };
 
-export type Task = {
-  id: number;
+type Task = {
+  id: string;
   title: string;
-  description?: string;
-  status: "todo" | "in-progress" | "done";
-  priority?: "Low" | "Medium" | "High";
+  description: string;
   projectId: number;
-  assignee?: string;
+  status: "todo" | "in-progress" | "done";
+  priority: "low" | "medium" | "high";
   dueDate?: string;
-  commentsCount?: number;
-  attachmentsCount?: number;
+  subtasks: {
+    id: string;
+    title: string;
+    completed: boolean;
+  }[];
+  comments: {
+    id: string;
+    author: string;
+    content: string;
+    createdAt: string;
+  }[];
 };
+
 
 export const api = {
   projects: () => fetchJson<Project[]>(`${API_BASE}/projects`),
