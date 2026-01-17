@@ -117,8 +117,9 @@ export default function DashboardPage() {
 
               <div className="mt-4 space-y-2">
                 {tasks.slice(0, 4).map((task) => (
-                  <div
+                  <Link
                     key={task.id}
+                    href={`/tasks/${task.id}`}
                     className="flex items-center justify-between rounded-md border p-3 hover:bg-muted transition"
                   >
                     <div className="flex items-center gap-3">
@@ -153,7 +154,7 @@ export default function DashboardPage() {
                     >
                       {task.status}
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </Card>
@@ -161,11 +162,5 @@ export default function DashboardPage() {
         )}
       </div>
     </AppShell>
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-      </main>
-    </div>
   );
 }
