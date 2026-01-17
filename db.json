@@ -50,8 +50,18 @@
         { "id": "3", "title": "Test contrast ratios", "completed": false }
       ],
       "comments": [
-        { "id": "1", "author": "Alice", "content": "The new palette looks great!", "createdAt": "2025-01-15T10:30:00Z" },
-        { "id": "2", "author": "John", "content": "Let's finalize the contrast ratios.", "createdAt": "2025-01-15T11:45:00Z" }
+        {
+          "id": "1",
+          "author": "Alice",
+          "content": "The new palette looks great!",
+          "createdAt": "2025-01-15T10:30:00Z"
+        },
+        {
+          "id": "2",
+          "author": "John",
+          "content": "Let's finalize the contrast ratios.",
+          "createdAt": "2025-01-15T11:45:00Z"
+        }
       ]
     },
     {
@@ -83,7 +93,12 @@
         { "id": "2", "title": "Create presentation", "completed": true }
       ],
       "comments": [
-        { "id": "1", "author": "Mike", "content": "Great insights!", "createdAt": "2025-01-10T16:00:00Z" }
+        {
+          "id": "1",
+          "author": "Mike",
+          "content": "Great insights!",
+          "createdAt": "2025-01-10T16:00:00Z"
+        }
       ]
     },
     {
