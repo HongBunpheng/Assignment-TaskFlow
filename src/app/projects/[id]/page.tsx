@@ -95,8 +95,9 @@ export default function ProjectDetailPage() {
 
                 <div className="space-y-2">
                     {tasks.map(task => (
-                        <div
+                        <Link
                             key={task.id}
+                            href={`/tasks/${task.id}`}
                             className="flex items-center justify-between rounded-md border px-4 py-3 hover:bg-muted transition"
                         >
                             <div className="flex items-center gap-3">
@@ -129,7 +130,7 @@ export default function ProjectDetailPage() {
                             >
                                 {task.status}
                             </Badge>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </Card>

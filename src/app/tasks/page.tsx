@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { TaskCheckbox } from "@/components/task-checkbox";
 
 type Filter = "all" | "todo" | "in-progress" | "done";
 
@@ -25,10 +27,19 @@ function statusStyle(status: string) {
 
 export default function TasksPage() {
     const [filter, setFilter] = useState<Filter>("all");
+    const qc = useQueryClient();
 
     const tasksQ = useQuery({
         queryKey: ["tasks"],
         queryFn: api.tasks,
+    });
+
+    const toggleTaskStatusM = useMutation({
+        mutationFn: async ({ id, nextStatus }: { id: string; nextStatus: "todo" | "done" }) =>
+            api.updateTask(id, { status: nextStatus }),
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: ["tasks"] });
+        }
     });
 
     const tasks = tasksQ.data ?? [];
@@ -92,11 +103,17 @@ export default function TasksPage() {
                                     className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="h-4 w-4 rounded border flex items-center justify-center">
-                                            {task.status === "done" && (
-                                                <div className="h-2 w-2 rounded bg-black" />
-                                            )}
-                                        </div>
+                                        <TaskCheckbox
+                                            checked={task.status === "done"}
+                                            disabled={toggleTaskStatusM.isPending}
+                                            onCheckedChange={(checked) => {
+                                                const nextStatus = checked ? "done" : "todo";
+                                                toggleTaskStatusM.mutate({
+                                                    id: task.id,
+                                                    nextStatus
+                                                });
+                                            }}
+                                        />
 
                                         <div>
                                             <div
