@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -26,10 +26,21 @@ function formatDate(date?: string) {
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const taskId = Number(id);
+  const qc = useQueryClient();
 
   const taskQ = useQuery({
     queryKey: ["task", taskId],
     queryFn: () => api.task(taskId)
+  });
+
+  const updateTaskM = useMutation({
+    mutationFn: (patch: Partial<Task>) => api.updateTask(id, patch),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["task", taskId] }),
+        qc.invalidateQueries({ queryKey: ["tasks"] }),
+      ]);
+    },
   });
 
   if (taskQ.isLoading) {
@@ -95,7 +106,31 @@ export default function TaskDetailPage() {
                   key={s.id}
                   className="flex items-center gap-3 rounded-md border p-3"
                 >
-                  <TaskCheckbox checked={s.completed} />
+                  <TaskCheckbox
+                    checked={s.completed}
+                    disabled={updateTaskM.isPending}
+                    onCheckedChange={(checked) => {
+                      const nextSubtasks = (task.subtasks ?? []).map((st) =>
+                        st.id === s.id ? { ...st, completed: checked } : st
+                      );
+
+                      const completedCount = nextSubtasks.filter(
+                        (st) => st.completed
+                      ).length;
+
+                      const nextStatus: Task["status"] =
+                        completedCount === 0
+                          ? "todo"
+                          : completedCount === nextSubtasks.length
+                            ? "done"
+                            : "in-progress";
+
+                      updateTaskM.mutate({
+                        subtasks: nextSubtasks,
+                        status: nextStatus,
+                      });
+                    }}
+                  />
                   <span
                     className={`text-sm ${s.completed
                       ? "line-through text-muted-foreground"

@@ -1,7 +1,14 @@
 export const API_BASE = "http://localhost:3001";
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    cache: "no-store",
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json() as Promise<T>;
 }
@@ -43,4 +50,10 @@ export const api = {
   task: (id: number) => fetchJson<Task>(`${API_BASE}/tasks/${id}`),
   tasksByProject: (projectId: number) =>
     fetchJson<Task[]>(`${API_BASE}/tasks?projectId=${projectId}`),
+
+  updateTask: (id: string | number, patch: Partial<Task>) =>
+    fetchJson<Task>(`${API_BASE}/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
 };
