@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskCheckbox } from "@/components/task-checkbox";
 
+type Task = Awaited<ReturnType<typeof api.task>>;
+type Subtask = Task["subtasks"][number];
+type Comment = Task["comments"][number];
+
 function formatDate(date?: string) {
     if (!date) return "—";
     return new Date(date).toLocaleDateString("en-US", {
@@ -79,14 +83,14 @@ export default function TaskDetailPage() {
                             <h3 className="font-medium">Subtasks</h3>
                             <span className="text-xs text-muted-foreground">
                                 {
-                                    task.subtasks?.filter((s: any) => s.completed).length
+                                    task.subtasks?.filter((s: Subtask) => s.completed).length
                                 }{" "}
                                 of {task.subtasks?.length ?? 0} completed
                             </span>
                         </div>
 
                         <div className="space-y-3">
-                            {task.subtasks?.map((s: any) => (
+                            {task.subtasks?.map((s: Subtask) => (
                                 <div
                                     key={s.id}
                                     className="flex items-center gap-3 rounded-md border p-3"
@@ -112,7 +116,7 @@ export default function TaskDetailPage() {
                         </h3>
 
                         <div className="space-y-4">
-                            {task.comments?.map((c: any) => (
+                            {task.comments?.map((c: Comment) => (
                                 <div key={c.id}>
                                     <div className="text-sm font-medium">{c.author}</div>
                                     <div className="text-xs text-muted-foreground">
