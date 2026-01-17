@@ -25,19 +25,19 @@ function formatDate(date?: string) {
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const taskId = Number(id);
   const qc = useQueryClient();
 
   const taskQ = useQuery({
-    queryKey: ["task", taskId],
-    queryFn: () => api.task(taskId)
+    queryKey: ["task", id],
+    queryFn: () => api.task(id),
+    enabled: Boolean(id),
   });
 
   const updateTaskM = useMutation({
     mutationFn: (patch: Partial<Task>) => api.updateTask(id, patch),
     onSuccess: async () => {
       await Promise.all([
-        qc.invalidateQueries({ queryKey: ["task", taskId] }),
+        qc.invalidateQueries({ queryKey: ["task", id] }),
         qc.invalidateQueries({ queryKey: ["tasks"] }),
       ]);
     },
