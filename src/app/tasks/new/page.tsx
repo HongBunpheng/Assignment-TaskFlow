@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useFieldArray, useForm } from "react-hook-form"
-import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { api, type Task } from "@/lib/api"
@@ -28,38 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-const taskSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  projectId: z.string().min(1, "Project is required"),
-  priority: z.enum(["low", "medium", "high"]),
-  status: z.enum(["todo", "in-progress", "done"]),
-  dueDate: z.string().min(1, "Due date is required"),
-  tags: z.string().optional(),
-  subtasks: z
-    .array(
-      z.object({
-        title: z.string().min(1, "Subtask title is required"),
-        completed: z.boolean(),
-      })
-    )
-    .default([]),
-  comments: z
-    .array(
-      z.object({
-        author: z.string().min(1, "Author is required"),
-        content: z.string().min(1, "Comment is required"),
-      })
-    )
-    .default([]),
-})
-
-type TaskFormValues = z.infer<typeof taskSchema>
-
-function newId() {
-  return globalThis.crypto?.randomUUID?.() ?? String(Date.now())
-}
+import { newId, TaskFormValues, taskSchema } from "@/lib/validations/task"
 
 export default function NewTaskPage() {
   const router = useRouter()
@@ -83,7 +51,7 @@ export default function NewTaskPage() {
       subtasks: [],
       comments: [],
     },
-    mode: "onSubmit",
+    // mode: "onSubmit",
   })
 
   const subtasksFA = useFieldArray({
@@ -134,6 +102,7 @@ export default function NewTaskPage() {
     },
   })
 
+
   return (
     <AppShell activePath="/tasks">
       <div className="flex items-start justify-between gap-3">
@@ -146,7 +115,10 @@ export default function NewTaskPage() {
       <Card className="mt-6 p-6">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((values) => createTaskM.mutate(values))}
+            // onSubmit={form.handleSubmit((values) => createTaskM.mutate(values))}
+            onSubmit={form.handleSubmit((values: TaskFormValues) => {
+              createTaskM.mutate(values);
+            })}
             className="space-y-6"
           >
             <FormField
@@ -299,7 +271,9 @@ export default function NewTaskPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => subtasksFA.append({ title: "", completed: false })}
+                  onClick={() =>
+                    subtasksFA.append({ title: "", completed: false })
+                  }
                 >
                   Add subtask
                 </Button>
@@ -407,7 +381,10 @@ export default function NewTaskPage() {
                             <FormItem>
                               <FormLabel>Comment</FormLabel>
                               <FormControl>
-                                <Input placeholder="The new palette looks great!" {...field} />
+                                <Input
+                                  placeholder="The new palette looks great!"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -443,6 +420,6 @@ export default function NewTaskPage() {
         </Form>
       </Card>
     </AppShell>
-  )
+  );
 }
 
