@@ -1,193 +1,175 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { use } from "react";
 import { api } from "@/lib/api";
-import { AppShell } from "@/components/app-shell";
-import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppShell } from "@/components/app-shell";
+import { Plus, MessageSquare } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { TaskCheckbox } from "@/components/task-checkbox";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-type Task = Awaited<ReturnType<typeof api.task>>;
-type Subtask = Task["subtasks"][number];
-type Comment = Task["comments"][number];
+export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const queryClient = useQueryClient();
 
-function formatDate(date?: string) {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  });
-}
-
-export default function TaskDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const qc = useQueryClient();
-
-  const taskQ = useQuery({
-    queryKey: ["task", id],
+  const { data: task, isLoading } = useQuery({
+    queryKey: ["tasks", id],
     queryFn: () => api.task(id),
-    enabled: Boolean(id),
   });
 
-  const updateTaskM = useMutation({
-    mutationFn: (patch: Partial<Task>) => api.updateTask(id, patch),
-    onSuccess: async () => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["task", id] }),
-        qc.invalidateQueries({ queryKey: ["tasks"] }),
-      ]);
+  const toggleSubtask = useMutation({
+    mutationFn: (subtaskid: string) => {
+      const updatedSubtasks = task?.subtasks.map((st) =>
+        st.id === subtaskid ? { ...st, completed: !st.completed } : st,
+      );
+      return api.updateTask(id, { subtasks: updatedSubtasks });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
     },
   });
 
-  if (taskQ.isLoading) {
+  if (isLoading)
     return (
-      <AppShell activePath="/tasks">
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-1/2" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </AppShell>
+      <div className="p-8 text-center text-slate-500">Loading task...</div>
     );
-  }
+  if (!task)
+    return <div className="p-8 text-center text-slate-500">Task not found</div>;
 
-  if (taskQ.isError || !taskQ.data) {
-    return (
-      <AppShell activePath="/tasks">
-        <Card className="p-5">
-          <div className="font-medium">Task not found</div>
-        </Card>
-      </AppShell>
-    );
-  }
-
-  const task = taskQ.data;
+  const completedCount = task.subtasks.filter((s) => s.completed).length;
 
   return (
     <AppShell activePath="/tasks">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        {/* LEFT COLUMN */}
-        <div className="space-y-6">
-          {/* HEADER */}
-          <Card className="p-6">
-            <h1 className="text-2xl font-semibold">{task.title}</h1>
-
-            <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
-              <Badge variant="outline">{task.status}</Badge>
-              <span>Due {formatDate(task.dueDate)}</span>
-            </div>
-
-            {task.description && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                {task.description}
-              </p>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="text-sm text-slate-400 mb-4 flex gap-2">
+          <span>Tasks</span> <span>&gt;</span>{" "}
+          <span className="text-slate-600">
+            Task #
+            {Math.abs(
+              (id as string)
+                .split("")
+                .reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10,
             )}
-          </Card>
-
-          {/* SUBTASKS */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium">Subtasks</h3>
-              <span className="text-xs text-muted-foreground">
-                {
-                  task.subtasks?.filter((s: Subtask) => s.completed).length
-                }{" "}
-                of {task.subtasks?.length ?? 0} completed
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {task.subtasks?.map((s: Subtask) => (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-3 rounded-md border p-3"
-                >
-                  <TaskCheckbox
-                    checked={s.completed}
-                    disabled={updateTaskM.isPending}
-                    onCheckedChange={(checked) => {
-                      const nextSubtasks = (task.subtasks ?? []).map((st) =>
-                        st.id === s.id ? { ...st, completed: checked } : st
-                      );
-
-                      const completedCount = nextSubtasks.filter(
-                        (st) => st.completed
-                      ).length;
-
-                      const nextStatus: Task["status"] =
-                        completedCount === 0
-                          ? "todo"
-                          : completedCount === nextSubtasks.length
-                            ? "done"
-                            : "in-progress";
-
-                      updateTaskM.mutate({
-                        subtasks: nextSubtasks,
-                        status: nextStatus,
-                      });
-                    }}
-                  />
-                  <span
-                    className={`text-sm ${s.completed
-                      ? "line-through text-muted-foreground"
-                      : ""
-                      }`}
-                  >
-                    {s.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* COMMENTS */}
-          <Card className="p-6">
-            <h3 className="font-medium mb-4">
-              Comments ({task.comments?.length ?? 0})
-            </h3>
-
-            <div className="space-y-4">
-              {task.comments?.map((c: Comment) => (
-                <div key={c.id}>
-                  <div className="text-sm font-medium">{c.author}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(c.createdAt).toLocaleString()}
-                  </div>
-                  <p className="mt-1 text-sm">{c.content}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+          </span>
         </div>
 
-        {/* RIGHT SIDEBAR */}
-        <Card className="p-6 space-y-4 sticky top-20 h-fit">
-          <div>
-            <div className="text-xs text-muted-foreground">Status</div>
-            <div className="font-medium">{task.status}</div>
-          </div>
+        <div className="lg:col-span-8 space-y-6">
+          <Card className="border shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-4">
+                <h1 className="text-3xl font-bold text-slate-900">
+                  {task.title}
+                </h1>
+                <div className="flex items-center gap-3">
+                  <Badge
+                    variant="outline"
+                    className="rounded-full px-3 py-0.5 capitalize border-slate-200 text-slate-600 font-medium"
+                  >
+                    {task.status}
+                  </Badge>
+                  <span className="text-sm text-slate-400">
+                    Due {task.dueDate}
+                  </span>
+                </div>
+              </div>
 
-          <div>
-            <div className="text-xs text-muted-foreground">Priority</div>
-            <div className="font-medium">{task.priority}</div>
-          </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold text-slate-800">Description</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  {task.description || "No description provided."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <div className="text-xs text-muted-foreground">Project</div>
-            <div className="font-medium">
-              Project #{task.projectId}
-            </div>
-          </div>
+          {/* Subtasks Section */}
+          <Card className="border shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex justify-between items-end">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Subtasks
+                </h3>
+                <p className="text-xs text-slate-400 font-medium">
+                  {completedCount} of {task.subtasks.length} completed
+                </p>
+              </div>
 
-          <div>
-            <div className="text-xs text-muted-foreground">Due date</div>
-            <div className="font-medium">{formatDate(task.dueDate)}</div>
-          </div>
-        </Card>
+              <div className="space-y-4">
+                {task.subtasks.length > 0 ? (
+                  task.subtasks.map((sub) => (
+                    <div key={sub.id} className="flex items-center gap-3 group">
+                      <TaskCheckbox
+                        id={`sub-${sub.id}`}
+                        checked={sub.completed}
+                        onCheckedChange={() =>
+                          sub.id && toggleSubtask.mutate(sub.id)
+                        }
+                      />
+                      <label
+                        htmlFor={`sub-${sub.id}`}
+                        className={cn(
+                          "text-sm font-medium transition-colors cursor-pointer",
+                          sub.completed
+                            ? "text-slate-300 line-through"
+                            : "text-slate-600",
+                        )}
+                      >
+                        {sub.title}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400 italic">
+                    No subtasks defined.
+                  </p>
+                )}
+
+                <button className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors pt-2 group">
+                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform text-center" />
+                  <span className="text-sm font-medium">Add subtask</span>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Comments Section */}
+          <Card className="border shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-slate-400" />
+                Comments ({task.comments.length})
+              </h3>
+
+              <div className="space-y-6">
+                {task.comments.map((comment, index) => (
+                  <div key={comment.id || index} className="flex gap-4">
+                    <Avatar className="w-9 h-9">
+                      <AvatarFallback className="bg-indigo-600 text-white text-xs font-bold">
+                        {comment.author[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">
+                          {comment.author}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {comment.createdAt || "2 hours ago"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        {comment.content}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppShell>
   );

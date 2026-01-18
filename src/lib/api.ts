@@ -51,18 +51,8 @@ export const api = {
 
   tasks: () => fetchJson<Task[]>(`${API_BASE}/tasks`),
   task: (id: string | number) => fetchJson<Task>(`${API_BASE}/tasks/${id}`),
-  tasksByProject: (projectId: string | number) =>
-    fetchJson<Task[]>(`${API_BASE}/tasks?projectId=${projectId}`),
-
-  // createTask: (task: Omit<Task, "id" | "subtasks" | "comments">) =>
-  //   fetchJson<Task>(`${API_BASE}/tasks`, {
-  //     method: "POST",
-  //     body: JSON.stringify({
-  //       ...task,
-  //       subtasks: [],
-  //       comments: [],
-  //     }),
-  //   }),
+  tasksByProject: (projectid: string | number) =>
+    fetchJson<Task[]>(`${API_BASE}/tasks?projectId=${projectid}`),
 
   createTask: (task: Task) =>
     fetchJson<Task>(`${API_BASE}/tasks`, {
