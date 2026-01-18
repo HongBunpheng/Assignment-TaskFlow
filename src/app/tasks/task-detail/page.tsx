@@ -2,13 +2,12 @@
 
 import { use } from "react";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { TaskCheckbox } from "@/components/task-checkbox";
-import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function TaskDetailPage({
@@ -91,24 +90,12 @@ export default function TaskDetailPage({
               {task.subtasks.map((sub) => (
                 <div key={sub.id} className="flex items-center gap-3 group">
                   <TaskCheckbox
-                    id={`sub-${sub.id}`}
                     checked={sub.completed}
-                    onCheckedChange={() =>
-                      sub.id && toggleSubtask.mutate(sub.id)
-                    }
-                    className="data-[state=checked]:bg-slate-900 data-[state=checked]:border-slate-900"
+                    onCheckedChange={() => sub.id && toggleSubtask.mutate(sub.id)}
                   />
-                  <label
-                    htmlFor={`sub-${sub.id}`}
-                    className={cn(
-                      "text-sm font-medium transition-colors cursor-pointer",
-                      sub.completed
-                        ? "text-slate-300 line-through"
-                        : "text-slate-600",
-                    )}
-                  >
+                  <span className="text-sm font-medium transition-colors cursor-pointer">
                     {sub.title}
-                  </label>
+                  </span>
                 </div>
               ))}
 
