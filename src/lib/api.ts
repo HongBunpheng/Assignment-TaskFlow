@@ -51,8 +51,14 @@ export const api = {
 
   tasks: () => fetchJson<Task[]>(`${API_BASE}/tasks`),
   task: (id: string | number) => fetchJson<Task>(`${API_BASE}/tasks/${id}`),
-  tasksByProject: (projectId: string | number) =>
-    fetchJson<Task[]>(`${API_BASE}/tasks?projectId=${projectId}`),
+  tasksByProject: (projectid: string | number) =>
+    fetchJson<Task[]>(`${API_BASE}/tasks?projectId=${projectid}`),
+
+  createTask: (task: Task) =>
+    fetchJson<Task>(`${API_BASE}/tasks`, {
+      method: "POST",
+      body: JSON.stringify(task),
+    }),
 
   updateTask: (id: string | number, patch: Partial<Task>) =>
     fetchJson<Task>(`${API_BASE}/tasks/${id}`, {
@@ -60,9 +66,8 @@ export const api = {
       body: JSON.stringify(patch),
     }),
 
-  createTask: (task: Task) =>
-    fetchJson<Task>(`${API_BASE}/tasks`, {
-      method: "POST",
-      body: JSON.stringify(task),
-    }),
+  deleteTask: (id: string | number) => 
+    fetchJson<void>(`${API_BASE}/tasks/${id}`, {
+      method: "DELETE",
+    })
 };
